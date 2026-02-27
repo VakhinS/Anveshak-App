@@ -19,7 +19,7 @@ def parse_can_frame(row):
     result['timestamp'] = row['timestamp']
 
     # Parse ID
-    frame_id = int(row['id'], 16)
+    frame_id = int(row['id'], 16) #converts the hexadecimal base-16 number to integer base-10
     result['id_value'] = frame_id
 
     # Check if ID is valid (11-bit max = 0x7FF = 2047)
@@ -28,7 +28,7 @@ def parse_can_frame(row):
         result['id_bits'] = None
     else:
         result['id_valid'] = True
-        result['id_bits'] = [(frame_id >> (10 - i)) & 1 for i in range(11)]
+        result['id_bits'] = [(frame_id >> (10 - i)) & 1 for i in range(11)] # converts integer id to 11 bit binary number
 
     # Parse IDE and RTR
     result['ide'] = int(row['ide'])
@@ -126,8 +126,8 @@ def validate_can_frames(csv_file):
 
                 if can_calculate:
                     # Combine all bits for CRC calculation (exclude timestamp)
-                    # Order: ID (11 bits) + RTR (1 bit) + IDE (1 bit) + 0 (1 bit, reserved=0) + DLC (4 bits) + Data
-                    all_bits = frame['id_bits'] + frame['rtr_bits'] + [frame['ide']] + [0] + frame['dlc_bits'] + frame['data_bits']
+                    # Order: SOF (0) + ID (11 bits) + RTR (1 bit) + IDE (1 bit) + 0 (1 bit, reserved=0) + DLC (4 bits) + Data
+                    all_bits = [0] + frame['id_bits'] + frame['rtr_bits'] + [frame['ide']] + [0] + frame['dlc_bits'] + frame['data_bits']
 
                     # Calculate CRC
                     calculated_crc = calculate_crc(all_bits)
