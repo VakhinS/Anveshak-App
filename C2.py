@@ -75,14 +75,14 @@ def send_data(ser: serial.Serial, data: np.ndarray) -> None:
     
     data_to_send = []
     
-    # Step 1: Add START byte
+    #Add START byte
     data_to_send.append(START_BYTE)
     
-    # Step 2: Add data length
+    #Add data length
     data_length = len(data)
     data_to_send.append(data_length)
     
-    # Step 3: Add PWM values with range validation
+    #Add PWM values with range validation
     pwm_values = []
     for pwm in data:
         # Convert to integer and validate range
@@ -94,20 +94,20 @@ def send_data(ser: serial.Serial, data: np.ndarray) -> None:
         pwm_values.append(pwm_value)
         data_to_send.append(pwm_value)
     
-    # Step 4: Calculate CRC over length + PWM data
+    # Calculate CRC over length + PWM data
     crc_data = bytes([data_length] + pwm_values)
     crc = calculate_crc(crc_data)
     data_to_send.append(crc)
     
-    # Step 5: Add END byte
+    # Add END byte
     data_to_send.append(END_BYTE)
     
     # For challenge question - simulate random bit corruption
-    '''for i in range(len(data_to_send)):
+    for i in range(len(data_to_send)):
         if np.random.random() < BYTE_RESET_PROBABLITY:
-            data_to_send[i] = 0x00'''
+            data_to_send[i] = 0x00
     
-    # Step 6: Send data one byte at a time (as required)
+    # Send data one byte at a time (as required)
     for byte in data_to_send:
         ser.write(bytes([byte]))
 
@@ -125,7 +125,7 @@ def receive_data(ser: serial.Serial) -> tuple[np.ndarray, bool]:
     acknowledgement = False
     
     try:
-        # Step 1: Wait for START byte
+        # Wait for START byte
         while True:
             byte = ser.read(1)
             if len(byte) == 0:  # Timeout
@@ -133,17 +133,17 @@ def receive_data(ser: serial.Serial) -> tuple[np.ndarray, bool]:
             if byte[0] == START_BYTE:
                 break
         
-        # Step 2: Read data length
+        # Read data length
         length_byte = ser.read(1)
         if len(length_byte) == 0:
             return np.array([]), False
         data_length = length_byte[0]
         
-        # Sanity check: reasonable data length
+        # check for reasonable data length
         if data_length == 0 or data_length > 200:
             return np.array([]), False
         
-        # Step 3: Read PWM values
+        # Read PWM values
         pwm_values = []
         for _ in range(data_length):
             pwm_byte = ser.read(1)
@@ -151,18 +151,18 @@ def receive_data(ser: serial.Serial) -> tuple[np.ndarray, bool]:
                 return np.array([]), False
             pwm_values.append(pwm_byte[0])
         
-        # Step 4: Read CRC
+        # Read CRC
         crc_byte = ser.read(1)
         if len(crc_byte) == 0:
             return np.array([]), False
         received_crc = crc_byte[0]
         
-        # Step 5: Read END byte
+        # Read END byte
         end_byte = ser.read(1)
         if len(end_byte) == 0 or end_byte[0] != END_BYTE:
             return np.array([]), False
         
-        # Step 6: Validate CRC
+        # Validate CRC
         crc_data = bytes([data_length] + pwm_values)
         calculated_crc = calculate_crc(crc_data)
         
@@ -171,7 +171,7 @@ def receive_data(ser: serial.Serial) -> tuple[np.ndarray, bool]:
             print("CRC Error")
             return np.array(pwm_values), False  # Return data but mark as failed
         
-        # Step 7: Range validation on all PWM values
+        # Range validation on all PWM values
         valid = True
         for pwm in pwm_values:
             if pwm < MIN_PWM or pwm > MAX_PWM:
@@ -182,18 +182,17 @@ def receive_data(ser: serial.Serial) -> tuple[np.ndarray, bool]:
         if not valid:
             return np.array(pwm_values), False
         
-        # Step 8: All checks passed!
         received_pwm_data = pwm_values
         acknowledgement = True
         print("CRC Valid")
         
     except Exception as e:
-        print(f"    ⚠️  Receive Error: {e}")
+        print(f"Receive Error: {e}")
         return np.array([]), False
     
     return np.array(received_pwm_data), acknowledgement
 
-# ==================== THREADING FUNCTIONS ====================
+
 def receive_thread_task(received_data: list, no_of_success: int):
     no_of_tries = 0
     try:
@@ -231,7 +230,7 @@ def generate_pwm():
     pwm = np.random.randint(0, 255, size=(100,))
     return pwm
 
-# ==================== MAIN FUNCTION ====================
+
 def main():
     print("=" * 60)
     print("PWM DATA TRANSMISSION WITH CRC AND VALIDATION")
